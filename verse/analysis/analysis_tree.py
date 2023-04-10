@@ -240,3 +240,24 @@ class AnalysisTree:
         labels = nx.get_node_attributes(G, 'time') 
         nx.draw_planar(G,labels=labels)
         plt.show()
+
+    def visualize_dot(self, filename: str, font: Optional[str] = None):
+        def gen_lines(node: AnalysisTreeNode) -> List[str]:
+            content = "\n".join(f"{aid}: {[*node.mode[aid], *[round(i, 2) for i in node.init[aid]]]}" for aid in node.agent)
+            self = f"node{node.id} [label=\"{content}\"]"
+            def diff(a: AnalysisTreeNode, b: AnalysisTreeNode) -> List[str]:
+                res = [aid for aid in a.agent if a.mode[aid] != b.mode[aid]]
+                assert res != []
+                return res
+            edges = [f"node{node.id} -> node{c.id} [label=\"{', '.join(diff(node, c))}\"]" for c in node.child]
+            ret = [self] + edges
+            for c in node.child:
+                ret.extend(gen_lines(c))
+            return ret
+        lines = ["digraph test {"]
+        if font != None:
+            lines.extend("\n".join(f"{t} [fontname=\"{font}\"]" for t in ["edge", "node", "graph"]))
+        lines.extend(gen_lines(self.root))
+        lines.append("}")
+        with open(filename, "w") as out:
+            out.writelines(l + "\n" for l in lines)
