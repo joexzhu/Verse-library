@@ -54,6 +54,6 @@ if __name__ == "__main__":
         run(True)
     elif '1' in bench.config.args:
         run()
-        bench.swap_dl("test", input_code_name.replace(".py", "2.py"))
+        bench.swap_dl("sleeve", input_code_name.replace(".py", "2.py"))
         run(True)
     bench.report()
