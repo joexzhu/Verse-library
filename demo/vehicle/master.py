@@ -16,19 +16,19 @@ if __name__ == "__main__":
 
     # output = sys.stdout
     RANDOM_SEED = 1118    #460, 1118, 1682538796
-    LANES_LIST = [3]
-    CAR_LIST = [20]
-    RUN_TIME_LIST =[20, 30, 40]
-    RUN_MODE_LIST = ['vl', 'vli', 'vi', 'v'] 
+    LANES_LIST = [4]
+    CAR_LIST = [15]
+    RUN_TIME_LIST =[30]
+    RUN_MODE_LIST = ['vn', 'vnl', 'vni', 'vnli'] 
     # ['bv','blv'] for multiple cores + incemental exploring #???collect setup: b, 3+[i]+[l]
-    # ['vi', 'vl', 'vil', 'v'] for incremental
+    # ['vl', 'vli', 'vi', 'v'] for incremental
     # ['vrli'] for repeat
     CAR_ID_LIST = [8]#[6, 5, 8] # used for changing decision logic
     # -1 as the 1st element in the list means no need to change decision logic. can be used to explore transition times
     # some useful transition times
     # {'car5': 1.0, 'car8': 14.6, 'car9': 46.6, 'car6': 48.6}
     # {'car3': 1.0, 'car5': 1.0, 'car24': 12.6, 'car8': 14.6, 'car21': 16.1, 'car19': 39.35}
-    OUTPUT_FILENAME = "output-incremental-(0509f)" + ".txt"
+    OUTPUT_FILENAME = "output-incremental-(0511a)" + ".txt"
     alt_car_list = []
     
     # First check how many CPU is online

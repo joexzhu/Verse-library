@@ -130,6 +130,7 @@ if __name__ == "__main__":
         bench.scenario.add_agent(car)
         set_init(car.id)
 
+    print(f'bench.config.args: {bench.config.args}')
     if 'b' in bench.config.args:
         run(True)
     elif 'r' in bench.config.args:
@@ -137,7 +138,7 @@ if __name__ == "__main__":
         run(True)
     elif 'n' in bench.config.args:
         run()
-        set_init(car_id(3), (100, -0.8))
+        set_init(car_id(CAR_ID), (100, -0.8))
         run(True)
     #elif '3' in bench.config.args:
         # run()
@@ -146,7 +147,7 @@ if __name__ == "__main__":
         #                                                       speed=old_agent.speed, accel=old_agent.accel)
         # run(True)
 
-    elif CAR_ID >= 0:
+    elif CAR_ID >= 0: 
         if bench.scenario.config.incremental:    # only run for incremental
             run()
         car = f"car{CAR_ID}"
