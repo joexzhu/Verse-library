@@ -356,4 +356,4 @@ class Benchmark:
             print(f"cache hit rate: {self.cache_hits[0] / (self.cache_hits[0] + self.cache_hits[1]) * 100:.2f}%")
 
     def swap_dl(self, id: str, alt_ctlr: str):
-        self.scenario.agent_dict[id].decision_logic = ControllerIR.parse(alt_ctlr)
+        self.scenario.agent_dict[id].decision_logic = ControllerIR.parse(fn=alt_ctlr)
