@@ -21,7 +21,7 @@ def run(meas=False):
         bench.scenario.verifier.trans_cache_hits = (0, 0)
     if not meas and not bench.scenario.config.incremental:
         return
-    traces = bench.run(3.5, 0.05)
+    traces = bench.run(sim_length, time_step)
 
     if bench.config.dump:
         traces.dump("tree2.json" if meas else "tree1.json") 
