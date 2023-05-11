@@ -27,7 +27,7 @@ if __name__ == "__main__":
     LANES_LIST = [4]
     CAR_LIST = [15]
     RUN_TIME_LIST =[30]
-    RUN_MODE_LIST = ['vl'] 
+    RUN_MODE_LIST = ['v', 'vl', 'vi', 'vli'] 
     # ['bv','blv'] for multiple cores + incemental exploring #???collect setup: b, 3+[i]+[l]
     # ['vl', 'vli', 'vi', 'v'] for incremental
     # ['vrli'] for repeat
