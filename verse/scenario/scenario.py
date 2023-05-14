@@ -31,6 +31,7 @@ class ScenarioConfig:
     parallel_sim_ahead: int = 8
     parallel_ver_ahead: int = 8
     parallel: bool = True
+    try_local: bool = False
 
 class Scenario:
     def __init__(self, config=ScenarioConfig()):
@@ -242,7 +243,7 @@ class ExprConfig:
     @staticmethod
     def from_arg(a: List[str], **kw) -> "ExprConfig":
         arg = "" if len(a) < 2 else a[1]
-        sconfig = ScenarioConfig(incremental='i' in arg, parallel='l' in arg, **kw)
+        sconfig = ScenarioConfig(incremental='i' in arg, parallel='l' in arg, try_local='t' in arg, **kw)
         cpds = "c" in arg, "p" in arg, "d" in arg, "v" not in arg
         for o in "cilpdv":
             arg = arg.replace(o, "")
@@ -273,6 +274,7 @@ class Benchmark:
     leaves: int
     _start_time: float
     parallelness: float
+    parallel_time_offset: float
     timesteps: int
 
     def __init__(self, argv: List[str], **kw):
@@ -283,6 +285,7 @@ class Benchmark:
         self.noisy_s = "no"
         self.parallelness = 0
         self.timesteps = 0
+        self.parallel_time_offset = 0
 
     def run(self, *a, **kw)->AnalysisTree:
         f = self.scenario.simulate if self.config.sim else self.scenario.verify
@@ -310,7 +313,9 @@ class Benchmark:
         self.leaves = self.traces.leaves()
         if self.config.config.parallel:
             import ray
-            self.parallelness = sum(ev["dur"] for ev in ray.timeline() if ev["cname"] == "generic_work") / 1_000_000 / self.run_time
+            parallel_time = sum(ev["dur"] for ev in ray.timeline() if ev["cname"] == "generic_work") / 1_000_000
+            self.parallelness = (parallel_time - self.parallel_time_offset) / self.run_time
+            self.parallel_time_offset = parallel_time
         return self.traces
 
     def compare_run(self, *a, **kw):
