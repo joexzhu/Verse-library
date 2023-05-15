@@ -15,24 +15,6 @@ LANES = 3
 CAR_ACCEL_RANGE = (0.7, 3)
 CAR_SPEED_RANGE = (1, 3)
 CAR_THETA_RANGE = (-0.1, 0.1)
-RUN_TIME = 20 #old value 60
-
-class ArgumentDict:
-    def __init__(self):
-        self.dict_internal = {}
-    def add(self, key, value):
-        self.dict_internal[key] = value
-    def get(self, key, default_value:any=None):
-        return self.dict_internal[key] if key in self.dict_internal.keys() else (eval(default_value) if default_value is not None else None)
-
-def first_transitions(tree: AnalysisTree) -> Dict[str, float]:     # id, start time
-    d = {}
-    for node in tree.nodes:
-        for child in node.child:
-            for aid in node.agent:
-                if aid not in d and node.mode[aid] != child.mode[aid]:
-                    d[aid] = child.start_time
-    return d
 
 def rand(start: float, end: float) -> float:
     return random.random() * (end - start) + start
@@ -45,7 +27,7 @@ def run(meas=False):
         bench.scenario.verifier.trans_cache_hits = (0, 0)
     if not meas and not bench.scenario.config.incremental:
         return
-    traces = bench.run(RUN_TIME, 0.05)
+    traces = bench.run(RUN_TIME, TIME_STEP)
 
     if bench.config.dump:
         traces.dump("tree2.json" if meas else "tree1.json") 
@@ -61,48 +43,30 @@ def run(meas=False):
             fig = reachtube_tree(traces, bench.scenario.map, fig, 1, 2, [1, 2], 'lines',combine_rect=5)
         fig.show()
 
-    if meas:
-        bench.report()
+    if meas and bench.scenario.config.parallel:
+        import ray
+        ray.timeline(f"isect-{SEED}-c{bench.scenario.config.parallel_ver_ahead}-a{CAR_NUM}-l{LANES}-t{RUN_TIME}-s{TIME_STEP}-{int(time.time())}.json")
+    bench.report()
     print(f"agent transition times: {first_transitions(traces)}")
 
 if __name__ == "__main__":
     import sys
-    bench = Benchmark(sys.argv)
     ctlr_src = "demo/vehicle/controller/intersection_car.py"
     alt_ctlr_src = ctlr_src.replace(".py", "_sw5.py") 
     import time
-    
-    arg_dict = ArgumentDict()
-    for i in range(1, len(sys.argv)):
-        key_value = sys.argv[i].split('=')
-        if len(key_value) == 2:
-            key, value = key_value
-            arg_dict.add(key.upper(), value.upper())
-    
-    CAR_NUM = int(arg_dict.get("CAR_NUM", '9'))
-    LANES = int(arg_dict.get("LANES", '4'))
-    seed = int(arg_dict.get("SEED", "time.time()"))
-    RUN_TIME = int(arg_dict.get("RUN_TIME", "40"))
-    CAR_ID = int(arg_dict.get("CAR_ID", "-1"))
-    #OUTPUT_FILENAME = arg_dict.get("OUTPUT")
-    
-    # if len(sys.argv) >= 3:
-    #     seed = int(sys.argv[2])
-    # else:
-    #     seed = int(time.time())
-
-    # if len(sys.argv) == 5:
-    #     CAR_NUM = int(sys.argv[3])
-    #     LANES = int(sys.argv[4])
-
-    print()
-    print("---------------  ", sys.argv[1], "  ---------------")
-    print(f"seed: {seed}, LANES: {LANES}, CAR_NUM: {CAR_NUM}, runtime: {RUN_TIME}, CAR_ID: {CAR_ID}")
-    random.seed(seed)
+    args = {k: v for k, v in (p.split(":") for p in sys.argv[2].split(","))} if len(sys.argv) > 1 else {}
 
     dirs = "WSEN"
-    LANES = int(sys.argv[3])
-    CAR_NUM = int(sys.argv[4])
+    LANES = int(args.get("lanes", 3))
+    CAR_NUM = int(args.get("cars", 9))
+    SEED = int(args.get("seed", time.time()))
+    RUN_TIME = float(args.get("time", 60))
+    TIME_STEP = float(args.get("step", 0.05))
+    par = int(args.get("par", 8))
+    
+    bench = Benchmark(sys.argv, parallel_sim_ahead=par, parallel_ver_ahead=par)
+    print(LANES, CAR_NUM, SEED, RUN_TIME, TIME_STEP, par)
+    random.seed(SEED)
     map = Intersection(lanes=LANES, length=400)
     bench.scenario.set_map(map)
     def set_init(id: str, alt_pos: Optional[Tuple[float, float]] = None):
@@ -131,7 +95,6 @@ if __name__ == "__main__":
         bench.scenario.add_agent(car)
         set_init(car.id)
 
-    print(f'bench.config.args: {bench.config.args}')
     if 'b' in bench.config.args:
         run(True)
     elif 'r' in bench.config.args:
@@ -139,28 +102,14 @@ if __name__ == "__main__":
         run(True)
     elif 'n' in bench.config.args:
         run()
-        set_init(car_id(CAR_ID), (100, -0.8))
+        set_init(car_id(3), (100, -0.8))
         run(True)
-    #elif '3' in bench.config.args:
-        # run()
-        # old_agent = bench.scenario.agent_dict["car3"]
-        # bench.scenario.agent_dict["car3"] = CarAgentDebounced('car3', file_name=ctlr_src.replace(".py", "_sw5.py"),
-        #                                                       speed=old_agent.speed, accel=old_agent.accel)
-        # run(True)
-
-    elif CAR_ID >= 0: 
-        if bench.scenario.config.incremental:    # only run for incremental
-            run()
-        car = f"car{CAR_ID}"
-        old_agent = bench.scenario.agent_dict[car]
-        bench.scenario.agent_dict[car] = CarAgentDebounced(car, file_name=ctlr_src.replace(".py", "_sw5.py"),
-                                                              speed=old_agent.speed, accel=old_agent.accel)
+    elif '1' in bench.config.args:
+        run()
+        bench.swap_dl("car8", alt_ctlr_src)
         run(True)
-    
-    
-    print(f"seed: {seed} \tcar_id: {CAR_ID}")
-    print(bench.scenario.verifier.tube_cache_hits, bench.scenario.verifier.trans_cache_hits)
-    # if 'l' in sys.argv[1] and 'v' in sys.argv[1]:
-    #     import ray
-    #     import datetime
-    #     ray.timeline(OUTPUT_FILENAME + datetime.datetime.now().strftime("%m%d-%H%M%S") + ".txt")
+    elif '2' in bench.config.args:
+        run()
+        bench.swap_dl("car6", alt_ctlr_src)
+        run(True)
+    print("seed:", SEED)
